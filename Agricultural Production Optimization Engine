@@ -1,0 +1,225 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from ipywidgets import interact
+
+data=pd.read_csv('Crop_recommendation.csv')
+
+print("Shape of the dataset",data.shape)
+
+data.head()
+
+data.isnull().sum()
+
+data['label'].value_counts()
+
+print("Average value Nitrogen in the Soil : {0:.2f}".format(data['N'].mean()))
+print("Average value of Phosphorous in the Soil : {0:.2f}".format(data['P'].mean()))
+print("Average value of Potassium in the Soil : {0:.2f}".format(data['K'].mean()))
+print("Average value of Calsius in the Soil : {0:.2f}".format(data['temperature'].mean()))
+print("Average value of Humidity in the Soil : {0:.2f}".format(data['humidity'].mean()))
+print("Average ph value of the Soil : {0:.2f}".format(data['ph'].mean()))
+print("Average Rainfall in the Soil : {0:.2f}".format(data['rainfall'].mean()))
+
+#Function to Check the summary statistics for each of the crops
+
+@interact
+def summary(crops=list(data['label'].value_counts().index)):
+    x=data[data['label']==crops]
+    print("-----------------------------------------")
+    print("Statistics for Nitrogen")
+    print("Minimum Nitrogen required: ",x['N'].min())
+    print("Average Nitrogen required: ",x['N'].mean())
+    print("Maximum Nitrogen required: ",x['N'].max())
+    
+    print("-----------------------------------------")
+    print("Statistics for Phosphorous")
+    print("Minimum Phosphorous required: ",x['P'].min())
+    print("Average Phosphorous required: ",x['P'].mean())
+    print("Maximum Phosphorous required: ",x['P'].max())
+    
+    print("-----------------------------------------")
+    print("Statistics for Potassium")
+    print("Minimum Potassium required: ",x['K'].min())
+    print("Average Potassium required: ",x['K'].mean())
+    print("Maximum Potassium required: ",x['K'].max())
+    
+    print("-----------------------------------------")
+    print("Statistics for Temperature")
+    print("Minimum Temperature required: ",x['temperature'].min())
+    print("Average Temperature required: ",x['temperature'].mean())
+    print("Maximum Temperature required: ",x['temperature'].max())
+    
+    print("-----------------------------------------")
+    print("Statistics for Humidity")
+    print("Minimum Humidity required: ",x['humidity'].min())
+    print("Average Humidity required: ",x['humidity'].mean())
+    print("Maximum Humidity required: ",x['humidity'].max())
+    print("-----------------------------------------")
+    print("Statistics for PH")
+    print("Minimum PH required: ",x['ph'].min())
+    print("Average PH required: ",x['ph'].mean())
+    print("Maximum PH required: ",x['ph'].max())
+    print("-----------------------------------------")
+    print("Statistics for Rainfall")
+    print("Minimum Rainfall required: ",x['rainfall'].min())
+    print("Average Rainfall required: ",x['rainfall'].mean())
+    print("Maximum Rainfall required: ",x['rainfall'].max())
+
+#Function to get to know which crops require less or greater than average condition
+    @interact
+def compare(condition=['N','P','K','temperature','ph','humidity','rainfall']):
+    print("Crops which require greater than average",condition,'\n')
+    print(data[data[condition]>data[condition].mean()]['label'].unique())
+    print("--------------------------------------------")
+    print("Crops which require less than average",condition,'\n')
+    print(data[data[condition]<=data[condition].mean()]['label'].unique())
+
+#Distibuition for Agricultural Condition
+plt.subplot(2,4,1)
+sns.distplot(data['temperature'],color='black')
+plt.xlabel('temperature',fontsize=12)
+plt.grid()
+
+plt.subplot(2,4,2)
+sns.distplot(data['N'],color='blue')
+plt.xlabel('Nitrogen',fontsize=12)
+plt.grid()
+
+plt.subplot(2,4,3)
+sns.distplot(data['P'],color='green')
+plt.xlabel('Phasphorous',fontsize=12)
+plt.grid()
+
+plt.subplot(2,4,4)
+sns.distplot(data['K'],color='brown')
+plt.xlabel('Potassium',fontsize=12)
+plt.grid()
+
+
+plt.subplot(2,4,5)
+sns.distplot(data['humidity'],color='yellow')
+plt.xlabel('Humidity',fontsize=12)
+plt.grid()
+
+plt.subplot(2,4,6)
+sns.distplot(data['ph'],color='red')
+plt.xlabel('PH',fontsize=12)
+plt.grid()
+
+
+plt.subplot(2,4,7)
+sns.distplot(data['rainfall'],color='blue')
+plt.xlabel('Rainfall',fontsize=12)
+plt.grid()
+
+##Finding out some interesting patterens
+print("Some interesting patterns")
+print("------------------------------------------")
+print("Crops which require very high ratio of Nitrogen Content in soil:",data[data['N']>120]['label'].unique())
+print("Crops which require very high ratio of Phosphorous Content in soil:",data[data['P']>100]['label'].unique())
+print("Crops which require very high ratio of Potassium Content in soil:",data[data['K']>200]['label'].unique())
+print("Crops which require very high rainfall:",data[data['rainfall']>200]['label'].unique())
+print("Crops which require very low temperature:",data[data['temperature']<10]['label'].unique())
+print("Crops which require very high temperature:",data[data['temperature']>40]['label'].unique())
+print("Crops which require very low humidity:",data[data['humidity']<20]['label'].unique())
+print("Crops which require very low PH:",data[data['ph']<4]['label'].unique())
+print("Crops which require very high PH:",data[data['ph']>9]['label'].unique())
+
+#Season wise distribution of crops
+print("Summer crops")
+print(data[(data['temperature']>30) & (data['humidity']>50)]['label'].unique())
+print("-------------------------------------------------------------")
+
+print("Winter crops")
+print(data[(data['temperature']<20) & (data['humidity']>30)]['label'].unique())
+print("-------------------------------------------------------------")
+
+print("Rainy crops")
+print(data[(data['rainfall']>200) & (data['humidity']>30)]['label'].unique())
+
+from sklearn.cluster import KMeans
+x=data.drop(['label'],axis=1)
+x=x.values
+print(x.shape)
+
+plt.rcParams['figure.figsize']=(10,4)
+wcss=[]
+for i in range(1,11):
+    km=KMeans(n_clusters=i,init='k-means++',max_iter = 3000, n_init=10,random_state=0)
+    km.fit(x)
+    wcss.append(km.inertia_)
+    
+#lets plot the result
+plt.plot(range(1,11),wcss)
+plt.title('The Elbow Method',fontsize=20)
+plt.xlabel('No. of Clusters')
+plt.ylabel('wcss')
+plt.show()
+
+km=KMeans(n_clusters=4,init='k-means++',max_iter=3000,n_init=10,random_state=0)
+y_means=km.fit_predict(x)
+
+#Result
+
+a=data['label']
+y_means=pd.DataFrame(y_means)
+z=pd.concat([y_means,a],axis=1)
+z=z.rename(columns={0:'cluster'})
+
+#Check the cluster of each crop
+
+print("Lets check the result after applying the kmeans clustering analysis \n")
+print("Crops in First Cluster:",z[z['cluster']==0]['label'].unique())
+print("-------------------------------------------------------------")
+print("Crops in Second Cluster:",z[z['cluster']==1]['label'].unique())
+print("-------------------------------------------------------------")
+print("Crops in Third Cluster:",z[z['cluster']==2]['label'].unique())
+print("-------------------------------------------------------------")
+
+print("Crops in Forth Cluster:",z[z['cluster']==3]['label'].unique())
+
+#Here we have splited the Dataset into two parts for Predictive Modeling
+y=data['label']
+x=data.drop(['label'],axis=1)
+print("Shape of x:",x.shape)
+print("Shape of y:",y.shape)
+
+# 80% data will go to training set and reamining 20% for testing set
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=0)
+print("The Shape of x train:", x_train.shape)
+print("The Shape of x test:", x_test.shape)
+print("The Shape of y train:", y_train.shape)
+print("The Shape of y test:", y_test.shape)
+
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression(solver='liblinear', max_iter=3000)
+model.fit(x_train,y_train)
+y_pred=model.predict(x_test)
+
+from sklearn.metrics import confusion_matrix
+#print the confusion matrix
+plt.rcParams['figure.figsize']=(10,10)
+cm=confusion_matrix(y_test,y_pred)
+sns.heatmap(cm,annot=True,cmap='Wistia')
+plt.title('Confusion Matrix for Logistic Regression',fontsize=15)
+plt.show()
+cr=classification_report(y_test, y_pred)
+print(cr)
+
+
+# Define feature names used during training
+feature_names = ['N', 'P', 'K', 'temperature', 'humidity','ph','rainfall']
+
+# Create a DataFrame with the input for prediction
+input_data = pd.DataFrame(np.array([[90, 40, 40, 20, 80, 7, 200]]), columns=feature_names)
+
+# Make prediction using the trained model
+prediction = model.predict(input_data)
+
+# Print the suggested crop
+print("The Suggested Crop for Given Climate Condition is:", prediction)
+#output:The Suggested Crop for Given Climate Condition is: ['rice']
